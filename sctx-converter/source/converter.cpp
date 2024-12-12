@@ -8,7 +8,7 @@ constexpr auto kTexture = "texture";
 constexpr auto kTextures = "textures";
 constexpr auto kPixelType = "type";
 constexpr auto kGenerateMips = "generate_mip_maps";
-constexpr auto kUnkInt = "unknown_integer";
+constexpr auto kFlags = "flags";
 constexpr auto kCompression = "compressed";
 
 constexpr auto kStreaming = "streaming";
@@ -51,7 +51,7 @@ void SCTXSerializer::load_serialized(std::filesystem::path path)
 		wk::InputFileStream texture_file(texture_path);
 		wk::stb::load_image(texture_file, texture);
 		m_texture = wk::CreateRef<SupercellTexture>(*texture, pixel_type, generate_mips);
-		m_texture->unknown_integer = data[kUnkInt];
+		m_texture->flags = data[kFlags];
 	}
 
 	auto& variants_data = data[kStreaming];
@@ -98,7 +98,7 @@ void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images
 		data[kTexture] = image.name;
 		data[kPixelType] = ScPixel::to_string(m_texture->pixel_type());
 		data[kGenerateMips] = m_texture->level_count() > 1;
-		data[kUnkInt] = m_texture->unknown_integer;
+		data[kFlags] = m_texture->flags;
 	}
 
 	auto& streaming_textures = json::object();
