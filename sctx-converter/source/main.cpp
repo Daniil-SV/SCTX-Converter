@@ -7,7 +7,7 @@ void decode(std::filesystem::path input, std::filesystem::path output)
 {
 	if (output.empty())
 	{
-		output = fs::path(input).replace_extension(".json");
+		output = fs::path(input).replace_extension(texture_only ? "png" : ".json");
 	}
 	fs::path basepath = output.parent_path();
 
@@ -19,9 +19,12 @@ void decode(std::filesystem::path input, std::filesystem::path output)
 	for (auto& image : images)
 	{
 		fs::path image_path = fs::path(basepath) / image.name;
-		wk::OutputFileStream stream(image_path);
+		wk::OutputFileStream stream(texture_only ? output : image_path);
 
 		wk::stb::write_image(*image.image, wk::stb::ImageFormat::PNG, stream);
+
+		// write only the first (level 0) texture
+		if (texture_only) break;
 	}
 }
 
@@ -42,6 +45,7 @@ void program(wk::ArgumentParser& args)
 	fs::path output = args.get("output");
 	std::string mode = args.get("mode");
 	compress_data = args.get<bool>("compress-data");
+	texture_only = args.get<bool>("texture-only");
 
 	if (mode == "decode")
 	{
@@ -61,7 +65,7 @@ int main(int argc, char* argv[])
 	wk::ArgumentParser parser(executable_name.string(), "Tool for compress and decompress Supercell Textures (SCTX)");
 
 	parser.add_argument("mode")
-		.help("Possible values: compress, decompress")
+		.help("Possible values: decode, encode")
 		.choices("decode", "encode");
 
 	parser.add_argument("input")
@@ -69,11 +73,15 @@ int main(int argc, char* argv[])
 
 	parser.add_argument("output")
 		.default_value("")
-		.help("Path to output sctx or info file. Optional.");
+		.help("Path to output sctx/info file/png file. Optional.");
 
 	parser.add_argument("--compress-data", "-c")
 		.flag()
 		.help("Compress texture data using ZSTD when encoding texture");
+
+	parser.add_argument("--texture-only", "-t")
+		.flag()
+		.help("Decompress only texture, without json file. But after that you will not be able to convert texture back to sctx");
 
 	try
 	{
