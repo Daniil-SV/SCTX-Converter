@@ -31,6 +31,9 @@ void encode(std::filesystem::path input, std::filesystem::path output)
 	{
 		output = fs::path(input).replace_extension(".sctx");
 	}
+
+	SCTXSerializer serializer(input, false);
+	serializer.save_binary(output, compress_data);
 }
 
 void program(wk::ArgumentParser& args)
@@ -38,10 +41,15 @@ void program(wk::ArgumentParser& args)
 	fs::path input = args.get("input");
 	fs::path output = args.get("output");
 	std::string mode = args.get("mode");
+	compress_data = args.get<bool>("compress-data");
 
 	if (mode == "decode")
 	{
 		decode(input, output);
+	}
+	else if (mode == "encode")
+	{
+		encode(input, output);
 	}
 }
 
@@ -63,6 +71,10 @@ int main(int argc, char* argv[])
 		.default_value("")
 		.help("Path to output sctx or info file. Optional.");
 
+	parser.add_argument("--compress-data", "-c")
+		.flag()
+		.help("Compress texture data using ZSTD when encoding texture");
+
 	try
 	{
 		parser.parse_args(argc, argv);
@@ -73,6 +85,19 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	program(parser);
+#ifndef _DEBUG
+	try
+	{
+#endif
+		program(parser);
+
+#ifndef _DEBUG
+	}
+	catch (const std::exception& exception)
+	{
+		std::cout << exception.what() << std::endl;
+		return 1;
+	}
+#endif	
 	return 0;
 }

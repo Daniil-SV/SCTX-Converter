@@ -4,6 +4,16 @@
 using json = nlohmann::ordered_json;
 namespace fs = std::filesystem;
 
+constexpr auto kTexture = "texture";
+constexpr auto kTextures = "textures";
+constexpr auto kPixelType = "type";
+constexpr auto kGenerateMips = "generate_mip_maps";
+constexpr auto kUnkInt = "unknown_integer";
+constexpr auto kCompression = "compressed";
+
+constexpr auto kStreaming = "streaming";
+constexpr auto kStreamingIds = "ids";
+
 SCTXSerializer::SCTXSerializer(fs::path path, bool is_binary)
 {
 	if (is_binary)
@@ -24,11 +34,60 @@ void SCTXSerializer::load_binary(std::filesystem::path path)
 
 void SCTXSerializer::load_serialized(std::filesystem::path path)
 {
+	using namespace sc::texture;
 
+	std::ifstream file(path);
+	json data = json::parse(file);
+
+	fs::path working_dir = path.parent_path();
+
+	{
+		fs::path texture_path = fs::path(working_dir) / data[kTexture];
+		ScPixel::Type pixel_type = ScPixel::from_string(data[kPixelType]);
+		bool generate_mips = data[kGenerateMips];
+
+		wk::Ref<wk::RawImage> texture;
+
+		wk::InputFileStream texture_file(texture_path);
+		wk::stb::load_image(texture_file, texture);
+		m_texture = wk::CreateRef<SupercellTexture>(*texture, pixel_type, generate_mips);
+		m_texture->unknown_integer = data[kUnkInt];
+	}
+
+	auto& variants_data = data[kStreaming];
+	auto& variants_ids = variants_data[kStreamingIds];
+	auto& variants_textures = variants_data[kTextures];
+
+	if (variants_ids.is_array())
+	{
+		m_texture->streaming_ids = variants_ids.template get<std::vector<uint32_t>>();
+	}
+
+	if (variants_textures.is_array())
+	{
+		size_t variants_count = variants_textures.size();
+		m_texture->streaming_variants = SupercellTexture::VariantsArray();
+		m_texture->streaming_variants->reserve(variants_count);
+
+		for (size_t i = 0; variants_count > i; i++)
+		{
+			auto& variant_texture = variants_textures[i];
+
+			fs::path texture_path = fs::path(working_dir) / variant_texture[kTexture];
+			ScPixel::Type pixel_type = ScPixel::from_string(data[kPixelType]);
+
+			wk::Ref<wk::RawImage> texture;
+			wk::InputFileStream texture_file(texture_path);
+			wk::stb::load_image(texture_file, texture);
+			m_texture->streaming_variants->emplace_back(*texture, pixel_type, false);
+		}
+	}
 }
 
 void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images)
 {
+	using namespace sc::texture;
+
 	fs::path basename = fs::path(path).stem();
 	json data = json::object();
 	
@@ -36,20 +95,23 @@ void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images
 		ImageInstance& image = images.emplace_back();
 		image.name = basename.string().append(SCTXSerializer::image_postfix);
 		SCTXSerializer::decode_texture(*m_texture, image.image);
-		data["texture"] = image.name;
-		data["generate_mip_maps"] = m_texture->level_count() > 1;
+		data[kTexture] = image.name;
+		data[kPixelType] = ScPixel::to_string(m_texture->pixel_type());
+		data[kGenerateMips] = m_texture->level_count() > 1;
+		data[kUnkInt] = m_texture->unknown_integer;
 	}
 
 	auto& streaming_textures = json::object();
 
 	if (m_texture->streaming_ids.has_value())
 	{
-		streaming_textures["ids"] = m_texture->streaming_ids.value();
+		streaming_textures[kStreamingIds] = m_texture->streaming_ids.value();
 	}
 
 	if (m_texture->streaming_variants.has_value())
 	{
-		std::vector<std::string> paths;
+		json variants_info = json::array();
+
 		auto& variants = m_texture->streaming_variants.value();
 		for (size_t i = 0; variants.size() > i; i++)
 		{
@@ -58,22 +120,26 @@ void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images
 			image.name = basename.string().append("_variant_").append(std::to_string(i)).append(SCTXSerializer::image_postfix);
 			SCTXSerializer::decode_texture(variant, image.image);
 
-			paths.push_back(image.name);
+			json variant_info = json::object();
+			variant_info[kTexture] = image.name;
+			variant_info[kPixelType] = ScPixel::to_string(variant.pixel_type());
+			variants_info.push_back(variant_info);
 		}
 
-		streaming_textures["textures"] = paths;
+		streaming_textures[kTextures] = variants_info;
 	}
 
-	data["streaming"] = streaming_textures;
+	data[kStreaming] = streaming_textures;
 
 	wk::OutputFileStream stream(path);
 	auto result = data.dump(2);
 	stream.write(result.data(), result.size());
 }
 
-void SCTXSerializer::save_binary(std::filesystem::path path)
+void SCTXSerializer::save_binary(std::filesystem::path path, bool save_compressed)
 {
-
+	wk::OutputFileStream file(path);
+	m_texture->write(file, save_compressed);
 }
 
 void SCTXSerializer::decode_texture(sc::texture::SupercellTexture& texture, wk::Ref<wk::RawImage>& image)

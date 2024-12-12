@@ -1,6 +1,7 @@
 #pragma once
 
 #include "texture/texture.h"
+#include "core/stb/stb.h"
 
 #include <filesystem>
 
@@ -27,7 +28,7 @@ public:
 
 public:
 	void save_serialized(std::filesystem::path path, ImagesT& images);
-	void save_binary(std::filesystem::path path);
+	void save_binary(std::filesystem::path path, bool save_compressed);
 
 private:
 	static void decode_texture(sc::texture::SupercellTexture& texture, wk::Ref<wk::RawImage>& image);

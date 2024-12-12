@@ -6,6 +6,8 @@
 
 #include <filesystem>
 
+static bool compress_data = false;
+
 void decode(std::filesystem::path input, std::filesystem::path output);
 void encode(std::filesystem::path input, std::filesystem::path output);
 
