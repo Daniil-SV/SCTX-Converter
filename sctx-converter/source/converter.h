@@ -28,7 +28,7 @@ public:
 
 public:
 	void save_serialized(std::filesystem::path path, ImagesT& images);
-	void save_binary(std::filesystem::path path, bool save_compressed);
+	void save_binary(std::filesystem::path path, bool save_compressed, bool save_padded);
 
 private:
 	static void decode_texture(sc::texture::SupercellTexture& texture, wk::Ref<wk::RawImage>& image);

@@ -8,8 +8,10 @@ constexpr auto kTexture = "texture";
 constexpr auto kTextures = "textures";
 constexpr auto kPixelType = "type";
 constexpr auto kGenerateMips = "generate_mip_maps";
-constexpr auto kFlags = "flags";
 constexpr auto kCompression = "compressed";
+
+constexpr auto kUnkFlag1 = "unknown_flag";
+constexpr auto kUnkFlag2 = "unknown_flag_1";
 
 constexpr auto kStreaming = "streaming";
 constexpr auto kStreamingIds = "ids";
@@ -51,7 +53,8 @@ void SCTXSerializer::load_serialized(std::filesystem::path path)
 		wk::InputFileStream texture_file(texture_path);
 		wk::stb::load_image(texture_file, texture);
 		m_texture = wk::CreateRef<SupercellTexture>(*texture, pixel_type, generate_mips);
-		m_texture->flags = data[kFlags];
+		m_texture->unknown_flag1 = data[kUnkFlag1];
+		m_texture->unknown_flag1 = data[kUnkFlag2];
 	}
 
 	auto& variants_data = data[kStreaming];
@@ -98,10 +101,11 @@ void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images
 		data[kTexture] = image.name;
 		data[kPixelType] = ScPixel::to_string(m_texture->pixel_type());
 		data[kGenerateMips] = m_texture->level_count() > 1;
-		data[kFlags] = m_texture->flags;
+		data[kUnkFlag1] = m_texture->unknown_flag1;
+		data[kUnkFlag2] = m_texture->unknown_flag2;
 	}
 
-	auto& streaming_textures = json::object();
+	auto streaming_textures = json::object();
 
 	if (m_texture->streaming_ids.has_value())
 	{
@@ -136,10 +140,13 @@ void SCTXSerializer::save_serialized(std::filesystem::path path, ImagesT& images
 	stream.write(result.data(), result.size());
 }
 
-void SCTXSerializer::save_binary(std::filesystem::path path, bool save_compressed)
+void SCTXSerializer::save_binary(std::filesystem::path path, bool save_compressed, bool save_padded)
 {
 	wk::OutputFileStream file(path);
-	m_texture->write(file, save_compressed);
+
+	m_texture->use_compression = save_compressed;
+	m_texture->use_padding = save_padded;
+	m_texture->write(file);
 }
 
 void SCTXSerializer::decode_texture(sc::texture::SupercellTexture& texture, wk::Ref<wk::RawImage>& image)

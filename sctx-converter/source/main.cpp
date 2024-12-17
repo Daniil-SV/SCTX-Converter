@@ -36,7 +36,7 @@ void encode(std::filesystem::path input, std::filesystem::path output)
 	}
 
 	SCTXSerializer serializer(input, false);
-	serializer.save_binary(output, compress_data);
+	serializer.save_binary(output, compress_data, use_padding);
 }
 
 void program(wk::ArgumentParser& args)
@@ -46,6 +46,7 @@ void program(wk::ArgumentParser& args)
 	std::string mode = args.get("mode");
 	compress_data = args.get<bool>("compress-data");
 	texture_only = args.get<bool>("texture-only");
+	use_padding = args.get<bool>("use-padding");
 
 	if (mode == "decode")
 	{
@@ -79,6 +80,10 @@ int main(int argc, char* argv[])
 		.flag()
 		.help("Compress texture data using ZSTD when encoding texture");
 
+	parser.add_argument("--use-padding", "-p")
+		.flag()
+		.help("Makes file 16 byte aligned");
+
 	parser.add_argument("--texture-only", "-t")
 		.flag()
 		.help("Decompress only texture, without json file. But after that you will not be able to convert texture back to sctx");
@@ -89,7 +94,7 @@ int main(int argc, char* argv[])
 	}
 	catch (const std::exception&)
 	{
-		parser.print_help();
+		std::cout << parser << std::endl;
 		return 0;
 	}
 

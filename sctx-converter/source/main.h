@@ -7,6 +7,7 @@
 #include <filesystem>
 
 static bool compress_data = false;
+static bool use_padding = false;
 
 static bool texture_only = false;
 

@@ -15,3 +15,5 @@ set_target_properties(${CLI_TARGET} PROPERTIES
 target_include_directories(${CLI_TARGET} PUBLIC source)
 
 target_link_libraries(${CLI_TARGET} PRIVATE supercell::texture)
+
+wk_project_setup(${CLI_TARGET})
