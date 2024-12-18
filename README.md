@@ -27,6 +27,8 @@ Also a little about additional flags:
 
 - `--compress-data` or `-c`:  use this option while encoding to compress data and make the resulting file smaller  
 
-- `--texture-only` or `-t`: use this option if you just want to get png texture, without json. Also keep in mind that without json file you will not be able to convert png back to sctx.
+- `--texture-only` or `-t`: use this option if you just want to get png texture, without json. Also keep in mind that without json file you will not be able to convert png back to sctx  
+
+- `--use-padding` or `-p`: aligns file to 16 bytes. I don't know why, but this feature is supported by format itself  
 
 
