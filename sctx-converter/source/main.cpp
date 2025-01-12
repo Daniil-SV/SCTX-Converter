@@ -35,6 +35,9 @@ void encode(std::filesystem::path input, std::filesystem::path output)
 		output = fs::path(input).replace_extension(".sctx");
 	}
 
+	SCTXSerializer::def_compression = compress_data;
+	SCTXSerializer::def_padding = use_padding;
+
 	SCTXSerializer serializer(input, false);
 	serializer.save_binary(output, compress_data, use_padding);
 }
@@ -86,7 +89,7 @@ int main(int argc, char* argv[])
 
 	parser.add_argument("--texture-only", "-t")
 		.flag()
-		.help("Decompress only texture, without json file. But after that you will not be able to convert texture back to sctx");
+		.help("Decompress only texture, without json file");
 
 	try
 	{

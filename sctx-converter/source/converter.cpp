@@ -24,8 +24,31 @@ SCTXSerializer::SCTXSerializer(fs::path path, bool is_binary)
 	}
 	else
 	{
-		load_serialized(path);
+		if (path.extension() == ".json")
+		{
+			load_serialized(path);
+		}
+		else
+		{
+			load_default_image(path);
+		}
+
 	}
+}
+
+void SCTXSerializer::load_default_image(std::filesystem::path path)
+{
+	using namespace sc::texture;
+
+	wk::Ref<wk::RawImage> texture;
+
+	wk::InputFileStream texture_file(path);
+	wk::stb::load_image(texture_file, texture);
+
+	m_texture = wk::CreateRef<SupercellTexture>(*texture, SCTXSerializer::def_pixel_type, SCTXSerializer::def_generate_mip_maps);
+	m_texture->unknown_flag2 = true;
+	m_texture->use_padding = SCTXSerializer::def_padding;
+	m_texture->use_compression = SCTXSerializer::def_compression;
 }
 
 void SCTXSerializer::load_binary(std::filesystem::path path)
@@ -54,7 +77,7 @@ void SCTXSerializer::load_serialized(std::filesystem::path path)
 		wk::stb::load_image(texture_file, texture);
 		m_texture = wk::CreateRef<SupercellTexture>(*texture, pixel_type, generate_mips);
 		m_texture->unknown_flag1 = data[kUnkFlag1];
-		m_texture->unknown_flag1 = data[kUnkFlag2];
+		m_texture->unknown_flag2 = data[kUnkFlag2];
 	}
 
 	auto& variants_data = data[kStreaming];

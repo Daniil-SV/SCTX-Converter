@@ -13,15 +13,15 @@ To convert `SCTX` to a pair of `JSON` and `PNG` use a command like that:
 `
 SctxConverter.exe decode file.sctx output.json
 `  
-Where the first argument describes mode (decode from sctx), the second argument describes the path to the input file (sctx) and the second argument is the output, for the decoding option it is json. Also the output argument is optional, without it path to the output will be automatically determined based on the input argument.  
+Where the first argument describes mode (decode from sctx), the second argument describes the path to the input file (sctx) and the second argument is the output, for the decoding option it is json (or to png with `-t` flag). Also the output argument is optional, without it path to the output will be automatically determined based on the input argument.  
 
 After that you can make all the necessary changes in png  
 
-To convert `JSON` and `PNG` back to `SCTX` use a command like this:  
+To convert `JSON` or `PNG` back to `SCTX` use a command like this:  
 `
 SctxConverter.exe encode input.json output.sctx
 `  
-Where the first argument describes mode (encode to sctx), the second argument describes the path to the input file (json) and the second argument is the output. The output argument is also optional, just like for decode.  
+Where the first argument describes mode (encode to sctx), the second argument describes the path to the input file (json or png) and the second argument is the output. The output argument is also optional, just like for decode.  
 
 Also a little about additional flags:
 
