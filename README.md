@@ -8,7 +8,9 @@ Seriously though, Supercell has been using .sctx files more and more lately, thi
 So this program can extract all data from sctx into .png and also a small .json file which contains some data which cannot be simply entered through console at the moment  
 
 # How to use
-Download the program from [Releases](https://github.com/Daniil-SV/SCTX-Converter/releases), unpack it to a convenient place and open the console in that place.  
+Download the program from [Releases](https://github.com/Daniil-SV/SCTX-Converter/releases) to a convenient place and open the console in that place.  
+Please note, release has 2 versions of the executable file. Prefer to use avx2 variant on newer machines.
+
 To convert `SCTX` to a pair of `JSON` and `PNG` use a command like that:  
 `
 SctxConverter.exe decode file.sctx output.json
