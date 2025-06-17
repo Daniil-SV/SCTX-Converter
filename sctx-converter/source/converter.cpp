@@ -41,9 +41,21 @@ void SCTXSerializer::load_default_image(std::filesystem::path path)
 	using namespace sc::texture;
 
 	wk::Ref<wk::RawImage> texture;
-
 	wk::InputFileStream texture_file(path);
-	wk::stb::load_image(texture_file, texture);
+
+	fs::path extension = path.extension();
+
+	if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".psd" || extension == ".tga" || extension == ".bmp")
+	{
+		wk::stb::load_image(texture_file, texture);
+	}
+	else if (extension == ".ktx")
+	{
+		KhronosTexture1 file(texture_file);
+		texture = wk::CreateRef<wk::RawImage>(file.width(), file.height(), file.depth(), file.colorspace());
+		wk::SharedMemoryStream texture_data(texture->data(), texture->data_length());
+		file.decompress_data(texture_data);
+	}
 
 	m_texture = wk::CreateRef<SupercellTexture>(*texture, SCTXSerializer::def_pixel_type, SCTXSerializer::def_generate_mip_maps);
 	m_texture->unknown_flag2 = true;
