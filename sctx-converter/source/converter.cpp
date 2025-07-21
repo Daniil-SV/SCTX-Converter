@@ -44,20 +44,23 @@ void SCTXSerializer::load_default_image(std::filesystem::path path)
 	wk::InputFileStream texture_file(path);
 
 	fs::path extension = path.extension();
-
+	ScPixel::Type target_type = SCTXSerializer::def_pixel_type;
+	bool generate_mip_maps = SCTXSerializer::def_generate_mip_maps;
 	if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" || extension == ".psd" || extension == ".tga" || extension == ".bmp")
 	{
 		wk::stb::load_image(texture_file, texture);
 	}
 	else if (extension == ".ktx")
 	{
-		KhronosTexture1 file(texture_file);
-		texture = wk::CreateRef<wk::RawImage>(file.width(), file.height(), file.depth(), file.colorspace());
+		auto file = KhronosTexture::load_texture(texture_file);
+		texture = wk::CreateRef<wk::RawImage>(file->width(), file->height(), file->depth(), file->colorspace());
 		wk::SharedMemoryStream texture_data(texture->data(), texture->data_length());
-		file.decompress_data(texture_data);
+		file->decompress_data(texture_data);
+		generate_mip_maps = file->level_count() > 1;
+		target_type = ScPixel::from_gl_format(file->internal_format());
 	}
 
-	m_texture = wk::CreateRef<SupercellTexture>(*texture, SCTXSerializer::def_pixel_type, SCTXSerializer::def_generate_mip_maps);
+	m_texture = wk::CreateRef<SupercellTexture>(*texture, target_type, generate_mip_maps);
 	m_texture->unknown_flag2 = true;
 	m_texture->use_padding = SCTXSerializer::def_padding;
 	m_texture->use_compression = SCTXSerializer::def_compression;
@@ -186,7 +189,29 @@ void SCTXSerializer::save_binary(std::filesystem::path path, bool save_compresse
 
 void SCTXSerializer::decode_texture(sc::texture::SupercellTexture& texture, wk::Ref<wk::RawImage>& image)
 {
-	image = wk::CreateRef<wk::RawImage>(texture.width(), texture.height(), texture.depth(), texture.colorspace());
-	wk::SharedMemoryStream stream(image->data(), image->data_length());
-	texture.decompress_data(stream);
+	wk::Image::PixelDepth depth;
+	wk::Image::ColorSpace space;
+	try
+	{
+		depth = texture.depth();
+		space = texture.colorspace();
+	}
+	catch (const wk::Exception&)
+	{
+		throw wk::Exception("Pixel type is not supported for decoding");
+	}
+
+	if (texture.is_compressed())
+	{
+		image = wk::CreateRef<wk::RawImage>(texture.width(), texture.height(), depth, space);
+		wk::SharedMemoryStream stream(image->data(), image->data_length());
+		texture.decompress_data(stream);
+	}
+	else
+	{
+		image = wk::CreateRef<wk::RawImage>(
+			texture.data(), 
+			texture.width(), texture.height(), depth, space
+		);
+	}
 }
